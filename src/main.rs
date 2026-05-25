@@ -64,5 +64,5 @@ async fn get_mod_versions(mod_name: &str) -> Vec<Version> {
     let url: String = format!("https://api.modrinth.com/v2/project/{}/version", mod_name);
     let response: reqwest::Response = reqwest::get(&url).await.unwrap();
 
-    return response.json::<Vec<Version>>().await.unwrap();
+    response.json::<Vec<Version>>().await.unwrap()
 }
