@@ -1,3 +1,5 @@
+use std::vec::Vec;
+
 use crate::models::Version;
 use clap::Parser;
 mod models;
@@ -13,14 +15,24 @@ async fn main() {
 
     let body: Vec<Version> = get_mod_versions(&args.mod_name).await;
 
-    println!("{} versions available.", body.len());
-    println!("Print how many?");
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
-    let num_versions: usize = input.trim().parse().unwrap_or(0);
+    // println!("{} versions available.", body.len());
+    // println!("Print how many?");
+    // let mut input = String::new();
+    // std::io::stdin().read_line(&mut input).unwrap();
+    // let num_versions: usize = input.trim().parse().unwrap_or(0);
 
-    for i in 0..num_versions {
-        print_version_info(&body[i]);
+    // for i in 0..num_versions {
+    //     print_version_info(&body[i]);
+    // }
+
+    let mut game_versions: Vec<Vec<String>> = Vec::new();
+
+    for version in body {
+        game_versions.push(version.game_versions);
+    }
+    println!("Available versions:");
+    for versions in game_versions {
+        println!("  - {}", versions.join(", "));
     }
 }
 
