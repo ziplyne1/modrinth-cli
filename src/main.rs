@@ -1,7 +1,11 @@
-use std::vec::Vec;
+// main.rs
+// created on 5/24/26
 
 use crate::models::Version;
 use clap::Parser;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::vec::Vec;
 mod models;
 
 #[derive(Parser)]
@@ -12,27 +16,47 @@ struct Cli {
 #[tokio::main]
 async fn main() {
     let args: Cli = Cli::parse();
-
     let body: Vec<Version> = get_mod_versions(&args.mod_name).await;
 
-    // println!("{} versions available.", body.len());
-    // println!("Print how many?");
-    // let mut input = String::new();
-    // std::io::stdin().read_line(&mut input).unwrap();
-    // let num_versions: usize = input.trim().parse().unwrap_or(0);
+    let mut available_versions: HashMap<String, HashSet<String>> = HashMap::new();
 
-    // for i in 0..num_versions {
-    //     print_version_info(&body[i]);
-    // }
+    // This loop *copies* all the game_versions into `game_versions`
+    for version in &body {
+        for game_version in &version.game_versions {
+            if !available_versions.contains_key(game_version) {
+                available_versions.insert(game_version.clone(), HashSet::new());
+            }
 
-    let mut game_versions: Vec<Vec<String>> = Vec::new();
-
-    for version in body {
-        game_versions.push(version.game_versions);
+            available_versions
+                .get_mut(game_version)
+                .unwrap()
+                .insert(version.id.clone());
+        }
     }
-    println!("Available versions:");
-    for versions in game_versions {
-        println!("  - {}", versions.join(", "));
+
+    let mut keys = available_versions.keys().cloned().collect::<Vec<String>>();
+    keys.sort();
+    keys.reverse();
+
+    let longest_key_length = keys
+        .iter()
+        .max_by_key(|s| s.len())
+        .unwrap_or(&String::new())
+        .len();
+
+    println!();
+    println!("https://modrinth.com/project/{}", &args.mod_name);
+    println!("Available versions for '{}':", &args.mod_name);
+    for key in keys {
+        println!(
+            "- {}{} ({})",
+            key,
+            " ".repeat(longest_key_length - key.len()),
+            available_versions
+                .get(&key)
+                .unwrap_or(&HashSet::new())
+                .len()
+        );
     }
 }
 
@@ -41,20 +65,4 @@ async fn get_mod_versions(mod_name: &str) -> Vec<Version> {
     let response: reqwest::Response = reqwest::get(&url).await.unwrap();
 
     return response.json::<Vec<Version>>().await.unwrap();
-}
-
-fn print_version_info(version: &Version) {
-    println!("-----------------------------");
-    println!("ID: {}", version.id);
-    println!("Name: {}", version.name);
-    println!("Version Number: {}", version.version_number);
-    println!("Version Type: {}", version.version_type);
-    println!("Loaders: {:?}", version.loaders);
-    println!("Game Versions: {:?}", version.game_versions);
-    println!("Files:");
-    for file in &version.files {
-        println!("  - URL: {}", file.url);
-        println!("    Filename: {}", file.filename);
-        println!("    Primary: {}", file.primary);
-    }
 }
