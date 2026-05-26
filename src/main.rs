@@ -2,21 +2,39 @@
 // created on 5/24/26
 
 use crate::models::Version;
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::vec::Vec;
 mod models;
 
 #[derive(Parser)]
+#[command(name = "mcli")]
+#[command(version)]
+#[command(about = "Modrinth CLI")]
 struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Get available versions for a mod
+    Versions(VersionsArgs),
+}
+
+#[derive(Args)]
+struct VersionsArgs {
+    /// The mod name (slug)
     mod_name: String,
 }
 
 #[tokio::main]
 async fn main() {
-    let args: Cli = Cli::parse();
-    print_available_versions(&args.mod_name).await;
+    let cli = Cli::parse();
+    match cli.command {
+        Commands::Versions(args) => print_available_versions(&args.mod_name).await,
+    }
 }
 
 async fn get_mod_versions(mod_name: &str) -> Vec<Version> {
