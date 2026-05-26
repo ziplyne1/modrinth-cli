@@ -16,7 +16,18 @@ struct Cli {
 #[tokio::main]
 async fn main() {
     let args: Cli = Cli::parse();
-    let body: Vec<Version> = get_mod_versions(&args.mod_name).await;
+    print_available_versions(&args.mod_name).await;
+}
+
+async fn get_mod_versions(mod_name: &str) -> Vec<Version> {
+    let url: String = format!("https://api.modrinth.com/v2/project/{}/version", mod_name);
+    let response: reqwest::Response = reqwest::get(&url).await.unwrap();
+
+    response.json::<Vec<Version>>().await.unwrap()
+}
+
+async fn print_available_versions(mod_name: &str) {
+    let body: Vec<Version> = get_mod_versions(&mod_name).await;
 
     let mut available_versions: HashMap<String, HashSet<String>> = HashMap::new();
 
@@ -45,8 +56,8 @@ async fn main() {
         .len();
 
     println!();
-    println!("https://modrinth.com/project/{}", &args.mod_name);
-    println!("Available versions for '{}':", &args.mod_name);
+    println!("https://modrinth.com/project/{}", &mod_name);
+    println!("Available versions for '{}':", &mod_name);
     for key in keys {
         println!(
             "- {}{} ({})",
@@ -58,11 +69,4 @@ async fn main() {
                 .len()
         );
     }
-}
-
-async fn get_mod_versions(mod_name: &str) -> Vec<Version> {
-    let url: String = format!("https://api.modrinth.com/v2/project/{}/version", mod_name);
-    let response: reqwest::Response = reqwest::get(&url).await.unwrap();
-
-    response.json::<Vec<Version>>().await.unwrap()
 }
