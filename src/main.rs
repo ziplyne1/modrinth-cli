@@ -1,39 +1,27 @@
 // main.rs
 // created on 5/24/26
 
-use crate::models::Version;
-use clap::{Args, Parser, Subcommand};
+mod cli;
+mod models;
+
+use cli::{Channel, Cli, Commands, Loader};
+use models::Version;
+
+use clap::Parser;
+
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::vec::Vec;
-mod models;
 
-#[derive(Parser)]
-#[command(name = "mcli")]
-#[command(version)]
-#[command(about = "Modrinth CLI")]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Get available versions for a mod
-    Versions(VersionsArgs),
-}
-
-#[derive(Args)]
-struct VersionsArgs {
-    /// The mod name (slug)
-    mod_name: String,
-}
 
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
     match cli.command {
         Commands::Versions(args) => print_available_versions(&args.mod_name).await,
+        Commands::Download(args) => {
+            download_latest(&args.mod_name, &args.loader, &args.channel).await
+        }
     }
 }
 
@@ -87,4 +75,26 @@ async fn print_available_versions(mod_name: &str) {
                 .len()
         );
     }
+}
+
+async fn download_latest(mod_name: &str, loader: &Loader, channel: &Channel) {
+    let versions = get_mod_versions(mod_name).await;
+    let mut candidate_version = &versions[0];
+
+    for version in &versions {
+        if !(&version.channel == channel) {
+            continue;
+        }
+        if !version.loaders.contains(&loader.to_string()) {
+            continue;
+        }
+        if !(version.version_number > candidate_version.version_number) {
+            continue;
+        }
+
+        candidate_version = &version;
+    }
+
+    println!("Selected version: {}", candidate_version.name);
+    println!("Channel: {}", candidate_version.channel);
 }
