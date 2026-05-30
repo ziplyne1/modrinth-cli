@@ -13,7 +13,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::vec::Vec;
 
-
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
@@ -33,7 +32,7 @@ async fn get_mod_versions(mod_name: &str) -> Vec<Version> {
 }
 
 async fn print_available_versions(mod_name: &str) {
-    let body: Vec<Version> = get_mod_versions(&mod_name).await;
+    let body: Vec<Version> = get_mod_versions(mod_name).await;
 
     let mut available_versions: HashMap<String, HashSet<String>> = HashMap::new();
 
@@ -88,13 +87,14 @@ async fn download_latest(mod_name: &str, loader: &Loader, channel: &Channel) {
         if !version.loaders.contains(&loader.to_string()) {
             continue;
         }
-        if !(version.version_number > candidate_version.version_number) {
+        if version.version_number <= candidate_version.version_number {
             continue;
         }
 
-        candidate_version = &version;
+        candidate_version = version;
     }
 
+    println!();
     println!("Selected version: {}", candidate_version.name);
     println!("Channel: {}", candidate_version.channel);
 }
